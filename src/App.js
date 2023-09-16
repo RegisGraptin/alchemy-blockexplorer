@@ -21,16 +21,73 @@ const alchemy = new Alchemy(settings);
 
 function App() {
   const [blockNumber, setBlockNumber] = useState();
+  const [blockTimestamp, setBlockTimestamp] = useState();
+  const [blockDifficulty, setBlockDifficulty] = useState();
+  const [blockTransactions, setBlockTransactions] = useState();
+
+  function truncateHash(hash){
+    if (hash) {
+      return hash.slice(0, 6) + "..." + hash.slice(-4);
+    }
+    return "";
+  }
 
   useEffect(() => {
     async function getBlockNumber() {
       setBlockNumber(await alchemy.core.getBlockNumber());
+
+      if (blockNumber) {
+        let data = await alchemy.core.getBlock(blockNumber);
+        setBlockTimestamp(data.timestamp);
+        setBlockDifficulty(data.difficulty);
+
+        console.log("request");
+
+        let transactionsData = await alchemy.core.getBlockWithTransactions(blockNumber);
+        setBlockTransactions(transactionsData.transactions)
+
+        console.log(blockTransactions)
+
+      }
+
     }
 
     getBlockNumber();
   });
 
-  return <div className="App">Block Number: {blockNumber}</div>;
+  return <div className="App">
+    <p>Block Number: {blockNumber}</p>
+    <p>Block Difficulty: {blockDifficulty}</p>
+    <p>Block Timestamp: {blockTimestamp}</p>
+    <br></br>
+    <p>Number of transactions: {blockTransactions ? blockTransactions.length : "undefined"}</p>
+
+    <hr></hr>
+
+    <table>
+      <thead>
+        <tr>
+          <th>TX hash</th>
+          <th>Block hash</th>
+          <th>From</th>
+          <th>To</th>
+          <th>Data</th>
+        </tr>
+      </thead>
+      <tbody>
+        {blockTransactions && (blockTransactions.map((transaction, index) => 
+          <tr id={ index }>
+            <td>{ truncateHash(transaction.hash) }</td>
+            <td>{ truncateHash(transaction.blockHash) }</td>
+            <td>{ truncateHash(transaction.from) }</td>
+            <td>{ truncateHash(transaction.to) }</td>
+            <td>{ transaction.data }</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>    
+
+  </div>;
 }
 
 export default App;
